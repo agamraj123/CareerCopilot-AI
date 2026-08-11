@@ -1,0 +1,10 @@
+const cleanResponse = (text) => {
+
+    return text
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
+
+};
+
+module.exports = cleanResponse;
