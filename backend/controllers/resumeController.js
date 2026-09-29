@@ -1,57 +1,35 @@
-const fs = require("fs");
 const pdfParse = require("pdf-parse");
 const logger = require("../utils/logger");
 const Resume = require("../models/Resume");
 
 const {
-  analyzeResume,
+    analyzeResume,
 } = require("../services/geminiService");
-const {
-    deleteUploadedFile,
-} = require("../utils/fileUtils");
+
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 
 const {
-  successResponse,
+    successResponse,
 } = require("../utils/apiResponse");
-
-// =====================================
-// Helper - Delete Uploaded File
-// =====================================
-
-// =====================================
-// Helper - Delete Uploaded File
-// =====================================
-
-
 
 // =====================================
 // Helper - Find User Resume
 // =====================================
 
 const findUserResume = async (userId) => {
+    const resume = await Resume.findOne({
+        userId,
+    });
 
-  const resume = await Resume.findOne({
+    if (!resume) {
+        throw new AppError(
+            "Resume not found.",
+            404
+        );
+    }
 
-    userId,
-
-  });
-
-  if (!resume) {
-
-    throw new AppError(
-
-      "Resume not found.",
-
-      404
-
-    );
-
-  }
-
-  return resume;
-
+    return resume;
 };
 
 // =====================================
@@ -61,91 +39,106 @@ const findUserResume = async (userId) => {
 const uploadResume = asyncHandler(async (req, res) => {
 
     if (!req.file) {
-
         throw new AppError(
             "Resume file is required.",
             400
         );
-
     }
+
+    // -------------------------------------
+    // Extract text directly from memory
+    // -------------------------------------
+
+    const pdfBuffer = req.file.buffer;
+
+    if (!pdfBuffer) {
+        throw new AppError(
+            "Unable to read the uploaded PDF.",
+            400
+        );
+    }
+
+    const data = await pdfParse(pdfBuffer);
+
+    if (!data.text || !data.text.trim()) {
+        throw new AppError(
+            "Unable to extract text from the uploaded PDF.",
+            400
+        );
+    }
+
+    // -------------------------------------
+    // AI Analysis
+    // -------------------------------------
+
+    let aiAnalysis = null;
 
     try {
 
-        const pdfBuffer = fs.readFileSync(req.file.path);
+        aiAnalysis = await analyzeResume(
+            data.text
+        );
 
-        const data = await pdfParse(pdfBuffer);
-        if (!data.text.trim()) {
+    } catch (error) {
 
-    throw new AppError(
+        logger.error(
+            "AI Analysis Failed:",
+            error.message
+        );
 
-        "Unable to extract text from the uploaded PDF.",
+        aiAnalysis = null;
+    }
 
-        400
+    // -------------------------------------
+    // Generate stored filename
+    // -------------------------------------
+
+    const fileName =
+        Date.now() +
+        "-" +
+        req.file.originalname;
+
+    // -------------------------------------
+    // Save Resume
+    // -------------------------------------
+
+    const resume = await Resume.findOneAndUpdate(
+
+        {
+            userId: req.user.id,
+        },
+
+        {
+            userId: req.user.id,
+            fileName,
+            resumeText: data.text,
+            aiAnalysis,
+        },
+
+        {
+            new: true,
+            upsert: true,
+            runValidators: true,
+            setDefaultsOnInsert: true,
+        }
 
     );
 
-}
+    // -------------------------------------
+    // Response
+    // -------------------------------------
 
-        let aiAnalysis = null;
+    return successResponse(
 
-        try {
+        res,
 
-            aiAnalysis = await analyzeResume(
-                data.text
-            );
+        resume,
 
-        } catch (error) {
+        aiAnalysis
+            ? "Resume uploaded and analyzed successfully."
+            : "Resume uploaded successfully, but AI analysis failed."
 
-            logger.error(
-                "AI Analysis Failed:",
-                error.message
-            );
-
-            aiAnalysis = null;
-
-        }
-
-        const resume = await Resume.findOneAndUpdate(
-
-    {
-        userId: req.user.id,
-    },
-
-    {
-        userId: req.user.id,
-        fileName: req.file.filename,
-        resumeText: data.text,
-        aiAnalysis,
-    },
-
-    {
-        new: true,
-        upsert: true,
-        runValidators: true,
-        setDefaultsOnInsert: true,
-    }
-
-);
-
-        return successResponse(
-
-            res,
-
-            resume,
-
-            aiAnalysis
-                ? "Resume uploaded and analyzed successfully."
-                : "Resume uploaded successfully, but AI analysis failed."
-
-        );
-
-    }
-
-    finally {
-
-        deleteUploadedFile(req.file.path);
-
-    }
+    );
 
 });
 
@@ -155,21 +148,15 @@ const uploadResume = asyncHandler(async (req, res) => {
 
 const getMyResume = asyncHandler(async (req, res) => {
 
-  const resume = await findUserResume(
+    const resume = await findUserResume(
+        req.user.id
+    );
 
-    req.user.id
-
-  );
-
-  return successResponse(
-
-    res,
-
-    resume,
-
-    "Resume fetched successfully."
-
-  );
+    return successResponse(
+        res,
+        resume,
+        "Resume fetched successfully."
+    );
 
 });
 
@@ -179,31 +166,27 @@ const getMyResume = asyncHandler(async (req, res) => {
 
 const reanalyzeResume = asyncHandler(async (req, res) => {
 
-  const resume = await findUserResume(
+    const resume = await findUserResume(
+        req.user.id
+    );
 
-    req.user.id
+    // -------------------------------------
+    // Reanalyze using stored resume text
+    // -------------------------------------
 
-  );
+    const aiAnalysis = await analyzeResume(
+        resume.resumeText
+    );
 
-  const aiAnalysis = await analyzeResume(
+    resume.aiAnalysis = aiAnalysis;
 
-    resume.resumeText
+    await resume.save();
 
-  );
-
-  resume.aiAnalysis = aiAnalysis;
-
-  await resume.save();
-
-  return successResponse(
-
-    res,
-
-    resume,
-
-    "Resume reanalyzed successfully."
-
-  );
+    return successResponse(
+        res,
+        resume,
+        "Resume reanalyzed successfully."
+    );
 
 });
 
@@ -213,34 +196,32 @@ const reanalyzeResume = asyncHandler(async (req, res) => {
 
 const deleteResume = asyncHandler(async (req, res) => {
 
-  const resume = await findUserResume(
+    const resume = await findUserResume(
+        req.user.id
+    );
 
-    req.user.id
+    await resume.deleteOne();
 
-  );
-
-  await resume.deleteOne();
-
-  return successResponse(
-
-    res,
-
-    null,
-
-    "Resume deleted successfully."
-
-  );
+    return successResponse(
+        res,
+        null,
+        "Resume deleted successfully."
+    );
 
 });
 
+// =====================================
+// Exports
+// =====================================
+
 module.exports = {
 
-  uploadResume,
+    uploadResume,
 
-  getMyResume,
+    getMyResume,
 
-  reanalyzeResume,
+    reanalyzeResume,
 
-  deleteResume,
+    deleteResume,
 
 };
