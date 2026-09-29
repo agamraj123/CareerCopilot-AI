@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+    createContext,
+    useContext,
+    useEffect,
+    useState,
+} from "react";
+
 import { getProfile } from "../api/authApi";
 
 const AuthContext = createContext();
@@ -9,13 +15,43 @@ export const AuthProvider = ({ children }) => {
 
     const [loading, setLoading] = useState(true);
 
-    const login = (token) => {
+    // =====================================
+    // Login
+    // =====================================
 
-        localStorage.setItem("token", token);
+    const login = async (token) => {
 
-        fetchProfile();
+        localStorage.setItem(
+            "token",
+            token
+        );
 
+        try {
+
+            const res = await getProfile();
+
+            setUser(res.data.data);
+
+            return res.data.data;
+
+        } catch (error) {
+
+            localStorage.removeItem("token");
+
+            setUser(null);
+
+            throw error;
+
+        } finally {
+
+            setLoading(false);
+
+        }
     };
+
+    // =====================================
+    // Logout
+    // =====================================
 
     const logout = () => {
 
@@ -25,6 +61,10 @@ export const AuthProvider = ({ children }) => {
 
     };
 
+    // =====================================
+    // Fetch Existing Profile
+    // =====================================
+
     const fetchProfile = async () => {
 
         try {
@@ -33,33 +73,33 @@ export const AuthProvider = ({ children }) => {
 
             setUser(res.data.data);
 
-        }
+        } catch (error) {
 
-        catch {
+            localStorage.removeItem("token");
 
-            logout();
+            setUser(null);
 
-        }
-
-        finally {
+        } finally {
 
             setLoading(false);
 
         }
-
     };
+
+    // =====================================
+    // Check Existing Session
+    // =====================================
 
     useEffect(() => {
 
-        const token = localStorage.getItem("token");
+        const token =
+            localStorage.getItem("token");
 
         if (token) {
 
             fetchProfile();
 
-        }
-
-        else {
+        } else {
 
             setLoading(false);
 
@@ -70,19 +110,12 @@ export const AuthProvider = ({ children }) => {
     return (
 
         <AuthContext.Provider
-
             value={{
-
                 user,
-
                 login,
-
                 logout,
-
                 loading,
-
             }}
-
         >
 
             {children}
@@ -90,7 +123,7 @@ export const AuthProvider = ({ children }) => {
         </AuthContext.Provider>
 
     );
-
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () =>
+    useContext(AuthContext);

@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router-dom";
+import Interview from "../pages/Interview/Interview";
 
 // Layouts
 import DashboardLayout from "../layouts/DashboardLayout";
@@ -51,6 +52,11 @@ const AppRoutes = () => {
                 <Route
                     path="/jobs"
                     element={<JobMatch />}
+                />
+
+                <Route
+                   path="/interview"
+                   element={<Interview />}
                 />
 
                 <Route

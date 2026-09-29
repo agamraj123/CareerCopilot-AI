@@ -1,5 +1,5 @@
 const ai = require("../config/gemini");
-
+const logger = require("../utils/logger");
 const {
   buildCoverLetterPrompt,
 } = require("../prompts/coverLetterPrompt");

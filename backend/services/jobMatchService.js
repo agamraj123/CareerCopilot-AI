@@ -1,3 +1,5 @@
+console.log("🔥🔥🔥 NEW JOB MATCH SERVICE CODE IS RUNNING 🔥🔥🔥");
+
 const ai = require("../config/gemini");
 
 const {
@@ -8,9 +10,13 @@ const cleanResponse = require("../utils/responseCleaner");
 
 const parseResponse = require("../utils/responseParser");
 
-const validateJobMatchResponse = require("../validators/ai/jobMatchValidator");
+const validateJobMatchResponse = require(
+  "../validators/ai/jobMatchValidator"
+);
 
-const getProcessingTime = require("../utils/responseTimer");
+const getProcessingTime = require(
+  "../utils/responseTimer"
+);
 
 // =====================================
 // Gemini Model
@@ -25,15 +31,17 @@ const MODEL = "gemini-2.5-flash";
 const generateAIResponse = async (prompt) => {
 
   const response = await ai.models.generateContent({
-
     model: MODEL,
-
     contents: prompt,
-
   });
 
-  return response.text;
+  if (!response || !response.text) {
+    throw new Error(
+      "Empty response received from Gemini."
+    );
+  }
 
+  return response.text;
 };
 
 // =====================================
@@ -41,82 +49,153 @@ const generateAIResponse = async (prompt) => {
 // =====================================
 
 const analyzeJobMatch = async (
-
   resumeText,
-
   jobDescription
-
 ) => {
 
   const startTime = Date.now();
 
   try {
 
-    // ================================
+    // =====================================
+    // Validate Input
+    // =====================================
+
+    if (!resumeText?.trim()) {
+      throw new Error(
+        "Resume text is required."
+      );
+    }
+
+    if (!jobDescription?.trim()) {
+      throw new Error(
+        "Job description is required."
+      );
+    }
+
+    console.log(
+      "[JOB MATCH] Starting analysis..."
+    );
+
+    // =====================================
     // Build Prompt
-    // ================================
+    // =====================================
 
     const prompt = buildJobMatchPrompt(
-
       resumeText,
-
       jobDescription
-
     );
 
-    // ================================
+    console.log(
+      "[JOB MATCH] Prompt generated."
+    );
+
+    // =====================================
     // Generate Gemini Response
-    // ================================
+    // =====================================
 
-    const rawResponse = await generateAIResponse(prompt);
+    const rawResponse =
+      await generateAIResponse(prompt);
 
-    logger.success("\n========== RAW GEMINI RESPONSE ==========");
-    logger.success(rawResponse);
-    logger.success("=========================================\n");
-
-    // ================================
-    // Clean Markdown
-    // ================================
-
-    const cleanedResponse = cleanResponse(rawResponse);
-
-    // ================================
-    // Parse JSON
-    // ================================
-
-    const parsedResponse = parseResponse(cleanedResponse);
-
-    logger.success("\n========== PARSED RESPONSE ==========");
-    console.dir(parsedResponse, { depth: null });
-    logger.success("=====================================\n");
-
-    // ================================
-    // Validate Response
-    // ================================
-
-    const validatedResponse = validateJobMatchResponse(
-      parsedResponse,
-      getProcessingTime(startTime),
-      MODEL
+    console.log(
+      "\n========== RAW GEMINI RESPONSE =========="
     );
 
-    logger.success("\n========== VALIDATED RESPONSE ==========");
-    console.dir(validatedResponse, { depth: null });
-    logger.success("========================================\n");
+    console.log(rawResponse);
+
+    console.log(
+      "=========================================\n"
+    );
+
+    // =====================================
+    // Clean Response
+    // =====================================
+
+    const cleanedResponse =
+      cleanResponse(rawResponse);
+
+    console.log(
+      "[JOB MATCH] Response cleaned."
+    );
+
+    // =====================================
+    // Parse JSON
+    // =====================================
+
+    const parsedResponse =
+      parseResponse(cleanedResponse);
+
+    console.log(
+      "\n========== PARSED RESPONSE =========="
+    );
+
+    console.dir(parsedResponse, {
+      depth: null,
+    });
+
+    console.log(
+      "=====================================\n"
+    );
+
+    // =====================================
+    // Validate / Normalize
+    // =====================================
+
+    const processingTime =
+      getProcessingTime(startTime);
+
+    const validatedResponse =
+      validateJobMatchResponse(
+        parsedResponse,
+        processingTime,
+        MODEL
+      );
+
+    console.log(
+      "\n========== VALIDATED RESPONSE =========="
+    );
+
+    console.dir(validatedResponse, {
+      depth: null,
+    });
+
+    console.log(
+      "========================================\n"
+    );
+
+    console.log(
+      `[JOB MATCH] Completed in ${processingTime}ms`
+    );
 
     return validatedResponse;
 
   } catch (error) {
 
-    logger.error("\n========== JOB MATCH SERVICE ERROR ==========");
-    logger.error("Unexpected Error",error);
-    logger.error("=============================================\n");
+    console.error(
+      "\n========== JOB MATCH SERVICE ERROR =========="
+    );
 
-    throw new Error("Failed to analyze job match.");
+    console.error(
+      error.message ||
+      "Unknown Job Match error"
+    );
 
+    console.error(error);
+
+    console.error(
+      "=============================================\n"
+    );
+
+    throw new Error(
+      error.message ||
+      "Failed to analyze job match."
+    );
   }
-
 };
+
+// =====================================
+// Export
+// =====================================
 
 module.exports = {
   analyzeJobMatch,

@@ -6,6 +6,7 @@ import {
   Brain,
   Briefcase,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
@@ -14,6 +15,8 @@ import GlassCard from "../ui/GlassCard";
 import StatCard from "../ui/StatCard";
 
 const Hero = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="relative flex min-h-[90vh] items-center overflow-hidden bg-slate-50 py-24">
       {/* Background Blur */}
@@ -22,6 +25,24 @@ const Hero = () => {
       <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-indigo-300 opacity-20 blur-3xl"></div>
 
       <Container>
+        {/* TOP NAVIGATION */}
+        <div className="absolute top-6 right-8 flex items-center gap-3">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => navigate("/login")}
+          >
+            Login
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={() => navigate("/register")}
+          >
+            Register
+          </Button>
+        </div>
+
         <div className="grid items-center gap-20 lg:grid-cols-2">
           {/* LEFT */}
           <motion.div
@@ -44,15 +65,22 @@ const Hero = () => {
             </p>
 
             <div className="mt-10 flex flex-wrap gap-5">
-              <Button size="lg">
+              <Button
+                size="lg"
+                onClick={() => navigate("/register")}
+              >
                 <span className="flex items-center gap-2">
                   Get Started
                   <ArrowRight size={20} />
                 </span>
               </Button>
 
-              <Button variant="secondary" size="lg">
-                Live Demo
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => navigate("/login")}
+              >
+                Login
               </Button>
             </div>
 

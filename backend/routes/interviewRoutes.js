@@ -5,67 +5,55 @@ const router = express.Router();
 const protect = require("../middleware/authMiddleware");
 const validateRequest = require("../middleware/validateRequest");
 
-const validateJobRequest = require(
-  "../validators/request/jobValidator"
-);
+const validateInterviewRequest =
+  require("../validators/request/interviewValidator");
 
 const {
-  analyzeJob,
-  getJobHistory,
-  getJobById,
-  updateJobStatus,
-  deleteJob,
-} = require("../controllers/jobController");
+  generateInterviewPreparation,
+  getInterviewHistory,
+  getInterviewById,
+  deleteInterview,
+} = require("../controllers/interviewController");
 
 // =====================================
-// Analyze Job Match
+// Generate Interview Preparation
 // =====================================
 
 router.post(
-  "/match",
+  "/generate",
   protect,
-  validateRequest(validateJobRequest),
-  analyzeJob
+  validateRequest(validateInterviewRequest),
+  generateInterviewPreparation
 );
 
 // =====================================
-// Job Match History
+// Interview History
 // =====================================
 
 router.get(
   "/history",
   protect,
-  getJobHistory
+  getInterviewHistory
 );
 
 // =====================================
-// Update Job Status
-// =====================================
-
-router.patch(
-  "/:id/status",
-  protect,
-  updateJobStatus
-);
-
-// =====================================
-// Get Single Job Analysis
+// Single Interview
 // =====================================
 
 router.get(
   "/:id",
   protect,
-  getJobById
+  getInterviewById
 );
 
 // =====================================
-// Delete Job Analysis
+// Delete Interview
 // =====================================
 
 router.delete(
   "/:id",
   protect,
-  deleteJob
+  deleteInterview
 );
 
 module.exports = router;

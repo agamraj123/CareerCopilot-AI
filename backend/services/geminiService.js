@@ -19,7 +19,7 @@ const {
 
 const generateAIResponse = async (prompt) => {
   const response = await ai.models.generateContent({
-    model: MODEL,
+    model: GEMINI_MODEL,
     contents: prompt,
   });
 
@@ -50,7 +50,7 @@ const analyzeResume = async (resumeText) => {
    validateResumeResponse(
     parsedResponse,
     processingTime,
-    MODEL
+    GEMINI_MODEL
 );
 
     return validatedResponse;

@@ -1,7 +1,7 @@
 import api from "./axios";
 
 export const generateCoverLetter = (data) =>
-    api.post("/cover-letter", data);
+    api.post("/cover-letter/generate", data);
 
 export const getCoverLetters = () =>
     api.get("/cover-letter/history");

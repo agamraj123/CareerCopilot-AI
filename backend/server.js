@@ -1,5 +1,6 @@
 const express = require("express");
 const dotenv = require("dotenv");
+const cors = require("cors");
 const logger = require("./utils/logger");
 const errorHandler = require(
     "./middleware/errorMiddleware"
@@ -11,7 +12,7 @@ const connectDB = require("./config/db");
 connectDB();
 
 const app = express();
-
+app.use(cors());
 app.use(express.json());
 
 // Routes
@@ -29,6 +30,10 @@ app.use(
 app.use(
     "/api/cover-letter",
     require("./routes/coverLetterRoutes")
+);
+app.use(
+  "/api/interview",
+  require("./routes/interviewRoutes")
 );
 // Home Route
 app.get("/", (req, res) => {
